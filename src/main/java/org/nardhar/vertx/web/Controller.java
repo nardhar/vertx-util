@@ -6,6 +6,7 @@ import io.vertx.core.Handler;
 import io.vertx.core.eventbus.EventBus;
 import io.vertx.core.eventbus.Message;
 import io.vertx.core.http.HttpMethod;
+import io.vertx.core.json.Json;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.Router;
@@ -24,7 +25,14 @@ public interface Controller extends BusSender {
 
     void setEventBus(EventBus eventBus);
 
-    default void action(HttpMethod method, String path, Function<RoutingContext, Future<JsonObject>> caller) {
+    /**
+     * Definition of a Controller Action for responding a request
+     * @param method The HttpMethod
+     * @param path The request path
+     * @param caller The function that takes the RoutingContext and returns a Future of the response body
+     * @param <T> The type of the response body (should be JsonArray or JsonObject)
+     */
+    default <T> void action(HttpMethod method, String path, Function<RoutingContext, Future<T>> caller) {
         getRouter()
             .route(method, path)
             .handler((ctx) -> caller.apply(ctx).setHandler((result) -> {
@@ -32,7 +40,7 @@ public interface Controller extends BusSender {
                     if (result.succeeded()) {
                         ctx.response()
                             .setStatusCode(ctx.request().method().equals(HttpMethod.POST) ? 201 : 200)
-                            .end(result.result().encode());
+                            .end(Json.encode(result.result()));
                     } else {
                         // TODO: create a proper error handler
                         ctx.response()
@@ -43,28 +51,9 @@ public interface Controller extends BusSender {
             }));
     }
 
-    default void actionArray(HttpMethod method, String path, Function<RoutingContext, Future<JsonArray>> caller) {
-        getRouter()
-            .route(method, path)
-                .handler((ctx) -> caller.apply(ctx).setHandler((result) -> {
-                    if (!ctx.response().ended()) {
-                        if (result.succeeded()) {
-                            ctx.response()
-                                .setStatusCode(ctx.request().method().equals(HttpMethod.POST) ? 201 : 200)
-                                .end(result.result().encode());
-                        } else {
-                            // TODO: create a proper error handler
-                            ctx.response()
-                                .setStatusCode(ctx.request().method().equals(HttpMethod.GET) ? 404 : 400)
-                                .end(result.cause().getMessage());
-                        }
-                    }
-                }));
-    }
-
     // shortcuts
     default void list(String path, Function<RoutingContext, Future<JsonArray>> caller) {
-        actionArray(HttpMethod.GET, path, caller);
+        action(HttpMethod.GET, path, caller);
     }
 
     default void get(String path, Function<RoutingContext, Future<JsonObject>> caller) {
