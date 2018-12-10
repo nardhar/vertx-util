@@ -34,7 +34,7 @@ public class RepositoryVerticle extends ConsumerVerticle {
 
         List<Class<? extends Model>> clazzModels = new ArrayList<>();
 
-        // clazzModels.add(PostModel.class);
+        // TODO: we could get all @Model annotated classes instead of passing a configuration variable
         config().getJsonArray("models")
             .forEach((clazz) -> {
                 try {
@@ -44,12 +44,12 @@ public class RepositoryVerticle extends ConsumerVerticle {
                 }
             });
 
-        // registra los modelos y sus clases
+        // registering model classes
         modelClass = new HashMap<>();
 
         clazzModels.forEach((clazz) -> modelClass.put(clazz.getName(), clazz));
 
-        // registra los modelos y los nombres de sus colecciones
+        // registering model collection names for mongodb
         modelCollection = new HashMap<>();
 
         Future<CompositeFuture> modelsFuture = Future.future();
@@ -69,7 +69,7 @@ public class RepositoryVerticle extends ConsumerVerticle {
         }).collect(Collectors.toList()))
         .setHandler(modelsFuture.completer());
 
-        // registra los endpoints
+        // adding endpoints
         addConsumer("repository.save", this::save);
         addConsumer("repository.insert", this::insert);
         addConsumer("repository.update", this::update);
@@ -88,7 +88,7 @@ public class RepositoryVerticle extends ConsumerVerticle {
 
         mongoClient.save(modelCollection.get(model), message.body(), res -> {
             if (res.succeeded()) {
-                // devuelve una copia del objeto con el id modificado y quitando el _id basico de mongo
+                // returning an object copy with its id modified and removing the _id from mongo
                 JsonObject record = message.body().copy();
                 record.put("id", res.result())
                     .remove("_id");
@@ -108,7 +108,6 @@ public class RepositoryVerticle extends ConsumerVerticle {
 
         mongoClient.insert(modelCollection.get(model), message.body(), res -> {
             if (res.succeeded()) {
-                // devuelve una copia del objeto con el id modificado y quitando el _id basico de mongo
                 JsonObject record = message.body().copy();
                 record.put("id", res.result())
                         .remove("_id");
@@ -144,7 +143,6 @@ public class RepositoryVerticle extends ConsumerVerticle {
             }
             mongoClient.updateCollectionWithOptions(modelCollection.get(model), query, update, options, res -> {
                 if (res.succeeded()) {
-                    // devuelve una copia del objeto con el id modificado y quitando el _id basico de mongo
                     message.reply(modelData.put("id", query.getString("_id")));
                 } else {
                     message.fail(400, new ApplicationException(
@@ -156,7 +154,6 @@ public class RepositoryVerticle extends ConsumerVerticle {
         } else {
             mongoClient.updateCollection(modelCollection.get(model), query, update, res -> {
                 if (res.succeeded()) {
-                    // devuelve una copia del objeto con el id modificado y quitando el _id basico de mongo
                     message.reply(modelData.put("id", query.getString("_id")));
                 } else {
                     message.fail(400, new ApplicationException(
@@ -225,8 +222,6 @@ public class RepositoryVerticle extends ConsumerVerticle {
 
         mongoClient.find(modelCollection.get(model), query, res -> {
             if (res.succeeded()) {
-                // devuelve el mismo objeto con el id modificado
-                // message.reply(new JsonObject().put("rows", new JsonArray(Collections.singletonList(res.result()))));
                 message.reply(new JsonArray(
                     res.result()
                         .stream()
@@ -282,7 +277,6 @@ public class RepositoryVerticle extends ConsumerVerticle {
 
         mongoClient.removeDocument(modelCollection.get(model), query, res -> {
             if (res.succeeded()) {
-                // devuelve una copia del objeto con el id modificado y quitando el _id basico de mongo
                 message.reply(modelData);
             } else {
                 message.fail(400, new ApplicationException(
@@ -300,7 +294,6 @@ public class RepositoryVerticle extends ConsumerVerticle {
 
         mongoClient.removeDocuments(modelCollection.get(model), query, res -> {
             if (res.succeeded()) {
-                // devuelve una copia del objeto con el id modificado y quitando el _id basico de mongo
                 message.reply(new JsonObject().put("success", true));
             } else {
                 message.fail(400, new ApplicationException(
@@ -318,7 +311,6 @@ public class RepositoryVerticle extends ConsumerVerticle {
 
         mongoClient.count(modelCollection.get(model), query, res -> {
             if (res.succeeded()) {
-                // devuelve una copia del objeto con el id modificado y quitando el _id basico de mongo
                 message.reply(new JsonObject().put("count", res.result()));
             } else {
                 message.fail(400, new ApplicationException(

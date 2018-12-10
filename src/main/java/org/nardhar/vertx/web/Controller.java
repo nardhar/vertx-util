@@ -27,45 +27,39 @@ public interface Controller extends BusSender {
     default void action(HttpMethod method, String path, Function<RoutingContext, Future<JsonObject>> caller) {
         getRouter()
             .route(method, path)
-            .handler((ctx) -> {
-                caller.apply(ctx).setHandler((result) -> {
-                    if (!ctx.response().ended()) {
-                        if (result.succeeded()) {
-                            ctx.response()
-                                .setStatusCode(ctx.request().method().equals(HttpMethod.POST) ? 201 : 200)
-                                .end(result.result().encode());
-                        } else {
-                            // TODO: deberia existir un error handler para evaluar el tipo de excepcion
-                            //   y asi se puede mandar error 412 o 500 tambien
-                            ctx.response()
-                                .setStatusCode(ctx.request().method().equals(HttpMethod.GET) ? 404 : 400)
-                                .end(result.cause().getMessage());
-                        }
+            .handler((ctx) -> caller.apply(ctx).setHandler((result) -> {
+                if (!ctx.response().ended()) {
+                    if (result.succeeded()) {
+                        ctx.response()
+                            .setStatusCode(ctx.request().method().equals(HttpMethod.POST) ? 201 : 200)
+                            .end(result.result().encode());
+                    } else {
+                        // TODO: create a proper error handler
+                        ctx.response()
+                            .setStatusCode(ctx.request().method().equals(HttpMethod.GET) ? 404 : 400)
+                            .end(result.cause().getMessage());
                     }
-                });
-            });
+                }
+            }));
     }
 
     default void actionArray(HttpMethod method, String path, Function<RoutingContext, Future<JsonArray>> caller) {
         getRouter()
             .route(method, path)
-            .handler((ctx) -> {
-                caller.apply(ctx).setHandler((result) -> {
+                .handler((ctx) -> caller.apply(ctx).setHandler((result) -> {
                     if (!ctx.response().ended()) {
                         if (result.succeeded()) {
                             ctx.response()
                                 .setStatusCode(ctx.request().method().equals(HttpMethod.POST) ? 201 : 200)
                                 .end(result.result().encode());
                         } else {
-                            // TODO: deberia existir un error handler para evaluar el tipo de excepcion
-                            //   y asi se puede mandar error 412 o 500 tambien
+                            // TODO: create a proper error handler
                             ctx.response()
                                 .setStatusCode(ctx.request().method().equals(HttpMethod.GET) ? 404 : 400)
                                 .end(result.cause().getMessage());
                         }
                     }
-                });
-            });
+                }));
     }
 
     // shortcuts

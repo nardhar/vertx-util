@@ -26,8 +26,7 @@ public class WebVerticle extends AbstractVerticle {
 
     @SuppressWarnings("unchecked")
     public void initControllers(Router router) {
-        // TODO: listar todas las clases que implementen Controller
-        // obtenemos los controladores de la configuracion
+        // TODO: we could get all @Controller annotated classes instead of passing a configuration variable
         config().getJsonArray("controllers")
             .forEach((controllerClass) -> {
                 try {
@@ -36,7 +35,7 @@ public class WebVerticle extends AbstractVerticle {
                     controller.setEventBus(vertx.eventBus());
                     controller.init();
                 } catch (IllegalAccessException|InstantiationException|ClassNotFoundException ex) {
-                    // TODO: agregar a un logger de error
+                    // TODO: add a proper logger
                     System.out.println("Could not deploy controller " + controllerClass);
                 }
             });
