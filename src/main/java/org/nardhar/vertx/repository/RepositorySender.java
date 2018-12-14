@@ -50,6 +50,14 @@ public interface RepositorySender extends BusSender {
             .compose((updatedModel) -> Future.succeededFuture(updatedModel.mapTo(clazz)));
     }
 
+    default <T extends Model> Function<T, Future<T>> dbUpdate(Class<T> clazz) {
+        return (model) -> dbUpdate(clazz, model);
+    }
+
+    default <T extends Model> Function<T, Future<T>> dbUpdate(Class<T> clazz, JsonObject options) {
+        return (model) -> dbUpdate(clazz, model, options);
+    }
+
     default <T extends Model> Future<List<T>> dbUpdateMulti(Class<T> clazz, JsonObject query, JsonObject data) {
         return dbUpdateMulti(clazz, query, data, new JsonObject());
     }
@@ -67,7 +75,7 @@ public interface RepositorySender extends BusSender {
                 .put("query", query)
                 .put("data", data)
         )
-        .compose((result) -> dbFindAll(clazz, query));
+            .compose((result) -> dbFindAll(clazz, query));
     }
 
     default <T extends Model> Future<List<T>> dbReplace(Class<T> clazz, JsonObject query, JsonObject data, JsonObject options) {
@@ -78,7 +86,7 @@ public interface RepositorySender extends BusSender {
                 .put("query", query)
                 .put("data", data)
         )
-        .compose((result) -> dbFindAll(clazz, query));
+            .compose((result) -> dbFindAll(clazz, query));
     }
 
     default <T extends Model> Future<T> dbFindOne(Class<T> clazz, JsonObject query) {
@@ -98,6 +106,14 @@ public interface RepositorySender extends BusSender {
     default <T extends Model> Future<T> dbDelete(Class<T> clazz, JsonObject query) {
         return busGetObject("repository.delete", dbHeaders(clazz), query)
             .compose((foundModel) -> Future.succeededFuture(foundModel.mapTo(clazz)));
+    }
+
+    default <T extends Model> Future<T> dbDelete(Class<T> clazz, T model) {
+        return dbDelete(clazz, JsonObject.mapFrom(model));
+    }
+
+    default <T extends Model> Function<T, Future<T>> dbDelete(Class<T> clazz) {
+        return (model) -> dbDelete(clazz, model);
     }
 
     default <T extends Model> Future<List<T>> dbDeleteAll(Class<T> clazz, JsonObject query) {
