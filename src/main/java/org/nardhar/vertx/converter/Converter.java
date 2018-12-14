@@ -5,6 +5,7 @@ import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 
 import java.util.List;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 public final class Converter {
@@ -29,5 +30,18 @@ public final class Converter {
 
     public static <T> Future<JsonArray> toFutureJsonArray(List<T> list) {
         return Future.succeededFuture(toJsonArray(list));
+    }
+
+    public static <T, U> Function<T, Future<U>> toFutureJsonObject(Function<T, U> fun) {
+        return (obj) -> Future.succeededFuture(fun.apply(obj));
+    }
+
+    @SuppressWarnings("unchecked")
+    public static <T> Function<JsonArray, Future<JsonArray>> toFutureJsonArray(Function<T, JsonObject> fun) {
+        return (array) -> Future.succeededFuture(new JsonArray(
+            array.stream()
+                .map(obj -> fun.apply((T) obj))
+                .collect(Collectors.toList())
+        ));
     }
 }
